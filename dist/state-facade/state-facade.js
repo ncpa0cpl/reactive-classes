@@ -12,11 +12,10 @@ const STATE_FACADE_SYMBOL = Symbol();
 class StateFacade {
     constructor(initVal) {
         this._isStateFacade = STATE_FACADE_SYMBOL;
-        this.hasBeenUsed = false;
         this.state = [
             undefined,
             () => {
-                throw new Error("State cannot be updated in the constructor.");
+                throw new Error("State updated before initialization.");
             },
         ];
         this.initArg = initVal;
@@ -46,11 +45,8 @@ class StateFacade {
             return newState;
         });
     }
-    isInitiated() {
-        return this.hasBeenUsed;
-    }
     get() {
-        const [stateValue] = this.hasBeenUsed ? this.state : [this.initArg];
+        const [stateValue] = this.state;
         if (!(0, is_object_1.isObject)(stateValue))
             return stateValue;
         const stateProxy = observable_slim_1.default.create(stateValue, false, (changes) => {
@@ -69,7 +65,6 @@ class StateFacade {
     }
     use() {
         this.state = react_1.default.useState(this.initArg);
-        this.hasBeenUsed = true;
     }
 }
 exports.StateFacade = StateFacade;

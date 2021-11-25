@@ -17,6 +17,7 @@ class ReactiveClass {
         const proxy = new Proxy(this, {
             set(target, key, value) {
                 if (state_facade_1.StateFacade.isStateFacade(value)) {
+                    value.use();
                     target._addHook(value);
                     Object.defineProperty(target, key, {
                         set(v) {
@@ -29,15 +30,14 @@ class ReactiveClass {
                     });
                 }
                 else if (generic_hook_facade_1.GenericHookFacade.isHookFacade(value)) {
+                    value.use();
                     target._addHook(value);
                     Object.defineProperty(target, key, {
                         set() {
                             throw new Error("Hook's cannot be overwritten.");
                         },
                         get() {
-                            if (value.isInitiated())
-                                return value.get();
-                            throw new Error("Hooks cannot be accessed in the constructor.");
+                            return value.get();
                         },
                     });
                 }

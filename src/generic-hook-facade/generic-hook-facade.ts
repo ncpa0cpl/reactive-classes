@@ -11,7 +11,6 @@ export class GenericHookFacade<T extends any[], R> {
 
   private _isHookFacade = HOOK_FACADE_SYMBOL;
 
-  private hasBeenUsed = false;
   private initArgs: T;
   private result!: R;
 
@@ -22,16 +21,11 @@ export class GenericHookFacade<T extends any[], R> {
     this.hookImpl = useHook;
   }
 
-  isInitiated() {
-    return this.hasBeenUsed;
-  }
-
   get(): R {
     return this.result;
   }
 
   use() {
     this.result = this.hookImpl(...this.initArgs);
-    this.hasBeenUsed = true;
   }
 }

@@ -58,6 +58,8 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
     const proxy = new Proxy(this, {
       set(target, key, value) {
         if (StateFacade.isStateFacade(value)) {
+          value.use();
+
           target._addHook(value);
 
           Object.defineProperty(target, key, {
@@ -70,6 +72,8 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
             },
           });
         } else if (GenericHookFacade.isHookFacade(value)) {
+          value.use();
+
           target._addHook(value);
 
           Object.defineProperty(target, key, {
@@ -77,8 +81,7 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
               throw new Error("Hook's cannot be overwritten.");
             },
             get() {
-              if (value.isInitiated()) return value.get();
-              throw new Error("Hooks cannot be accessed in the constructor.");
+              return value.get();
             },
           });
         } else {

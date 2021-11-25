@@ -18,12 +18,11 @@ export class StateFacade<T> {
 
   private _isStateFacade = STATE_FACADE_SYMBOL;
 
-  private hasBeenUsed = false;
   private initArg: T;
   private state: [T, SetArg<T>] = [
     undefined as any,
     () => {
-      throw new Error("State cannot be updated in the constructor.");
+      throw new Error("State updated before initialization.");
     },
   ];
 
@@ -64,12 +63,8 @@ export class StateFacade<T> {
     });
   }
 
-  isInitiated() {
-    return this.hasBeenUsed;
-  }
-
   get(): T {
-    const [stateValue] = this.hasBeenUsed ? this.state : [this.initArg];
+    const [stateValue] = this.state;
 
     if (!isObject(stateValue)) return stateValue;
 
@@ -90,6 +85,5 @@ export class StateFacade<T> {
 
   use() {
     this.state = React.useState(this.initArg);
-    this.hasBeenUsed = true;
   }
 }

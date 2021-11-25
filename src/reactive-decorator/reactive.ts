@@ -32,14 +32,22 @@ export const reactive = <P extends React.PropsWithChildren<object>>(
   }
 
   return (props: P) => {
-    const [component] = React.useState(() => new RCC(props));
+    const component = React.useRef<RCC>();
 
-    component["_setProps"](props);
+    if (!component.current) {
+      component.current = new RCC(props);
 
-    component["_useHooks"]();
+      component.current["_useEffects"]();
 
-    component["_useEffects"]();
+      return component.current.render(props);
+    }
 
-    return component.render(props);
+    component.current["_setProps"](props);
+
+    component.current["_useHooks"]();
+
+    component.current["_useEffects"]();
+
+    return component.current.render(props);
   };
 };

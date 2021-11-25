@@ -28,11 +28,16 @@ const reactive = (Constructor) => {
         }
     }
     return (props) => {
-        const [component] = react_1.default.useState(() => new RCC(props));
-        component["_setProps"](props);
-        component["_useHooks"]();
-        component["_useEffects"]();
-        return component.render(props);
+        const component = react_1.default.useRef();
+        if (!component.current) {
+            component.current = new RCC(props);
+            component.current["_useEffects"]();
+            return component.current.render(props);
+        }
+        component.current["_setProps"](props);
+        component.current["_useHooks"]();
+        component.current["_useEffects"]();
+        return component.current.render(props);
     };
 };
 exports.reactive = reactive;

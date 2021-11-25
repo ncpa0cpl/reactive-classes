@@ -5,7 +5,6 @@ const HOOK_FACADE_SYMBOL = Symbol();
 class GenericHookFacade {
     constructor(useHook, initVal) {
         this._isHookFacade = HOOK_FACADE_SYMBOL;
-        this.hasBeenUsed = false;
         this.initArgs = initVal;
         this.hookImpl = useHook;
     }
@@ -14,15 +13,11 @@ class GenericHookFacade {
             d !== null &&
             d._isHookFacade === HOOK_FACADE_SYMBOL);
     }
-    isInitiated() {
-        return this.hasBeenUsed;
-    }
     get() {
         return this.result;
     }
     use() {
         this.result = this.hookImpl(...this.initArgs);
-        this.hasBeenUsed = true;
     }
 }
 exports.GenericHookFacade = GenericHookFacade;
