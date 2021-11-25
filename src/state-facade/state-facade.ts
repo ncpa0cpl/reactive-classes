@@ -58,8 +58,9 @@ export class StateFacade<T> {
 
     if (!isObject(stateValue)) return stateValue;
 
-    const stateProxy = Observable.create(stateValue, false, (change) => {
-      this.updateNestedState(change.currentPath, change.newValue);
+    const stateProxy = Observable.create(stateValue, false, (changes) => {
+      const [change] = changes;
+      if (change) this.updateNestedState(change.currentPath, change.newValue);
     });
 
     Observable.pauseChanges(stateProxy);

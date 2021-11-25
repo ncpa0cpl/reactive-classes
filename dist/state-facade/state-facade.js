@@ -42,8 +42,10 @@ class StateFacade {
         const [stateValue] = this.state;
         if (!(0, is_object_1.isObject)(stateValue))
             return stateValue;
-        const stateProxy = observable_slim_1.default.create(stateValue, false, (change) => {
-            this.updateNestedState(change.currentPath, change.newValue);
+        const stateProxy = observable_slim_1.default.create(stateValue, false, (changes) => {
+            const [change] = changes;
+            if (change)
+                this.updateNestedState(change.currentPath, change.newValue);
         });
         observable_slim_1.default.pauseChanges(stateProxy);
         return stateProxy;
