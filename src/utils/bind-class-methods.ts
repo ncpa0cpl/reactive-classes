@@ -5,6 +5,8 @@ export const bindClassMethods = <O extends object>(
   const ownPropertyNames = Object.getOwnPropertyNames(prototype);
 
   for (const property of ownPropertyNames) {
+    if (property === "constructor") continue;
+
     // @ts-expect-error
     const method: unknown = obj[property];
 

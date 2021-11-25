@@ -1,12 +1,13 @@
-import React from "react";
 export declare class StateFacade<T> {
     static isStateFacade(d: any): d is StateFacade<unknown>;
-    private _isStateStore;
-    private initValue;
+    private _isStateFacade;
+    private hasBeenUsed;
+    private initArg;
     private state;
     constructor(initVal: T);
     private updateNestedState;
+    isInitiated(): boolean;
     get(): T;
-    set(v: React.SetStateAction<T>): void;
+    set(v: T): void;
     use(): void;
 }

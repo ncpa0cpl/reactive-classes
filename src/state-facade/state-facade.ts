@@ -5,56 +5,71 @@ import { isObject } from "../utils/is-object";
 
 type SetArg<T> = React.Dispatch<React.SetStateAction<T>>;
 
-const STATE_STORE_SYMBOL = Symbol();
+const STATE_FACADE_SYMBOL = Symbol();
 
 export class StateFacade<T> {
   static isStateFacade(d: any): d is StateFacade<unknown> {
     return (
       typeof d === "object" &&
       d !== null &&
-      d._isStateStore === STATE_STORE_SYMBOL
+      d._isStateFacade === STATE_FACADE_SYMBOL
     );
   }
 
-  private _isStateStore = STATE_STORE_SYMBOL;
+  private _isStateFacade = STATE_FACADE_SYMBOL;
 
-  private initValue: T;
-  private state: [T, SetArg<T>] = [undefined as any, () => {}];
+  private hasBeenUsed = false;
+  private initArg: T;
+  private state: [T, SetArg<T>] = [
+    undefined as any,
+    () => {
+      throw new Error("State cannot be updated in the constructor.");
+    },
+  ];
 
   constructor(initVal: T) {
-    this.initValue = initVal;
+    this.initArg = initVal;
   }
 
   private updateNestedState(path: string, value: unknown) {
-    const [currentState] = this.state;
+    const [_, setState] = this.state;
 
-    if (!isObject(currentState)) return;
+    setState((currentState) => {
+      if (!isObject(currentState))
+        throw new TypeError(
+          `'${path}' does not exists on ${typeof currentState}`
+        );
 
-    const parts = path.split(".");
+      const parts = path.split(".");
 
-    const newState = { ...currentState };
+      const newState = { ...currentState };
 
-    let ref = newState;
+      let ref = newState;
 
-    for (const [index, key] of parts.entries()) {
-      const isLastKey = parts.length === index + 1;
+      for (const [index, key] of parts.entries()) {
+        const isLastKey = parts.length === index + 1;
 
-      const elem = lodash.get(ref, key);
+        const elem = lodash.get(ref, key);
 
-      lodash.set(ref, key, lodash.clone(elem));
+        lodash.set(ref, key, lodash.clone(elem));
 
-      if (isLastKey) {
-        lodash.set(ref, key, value);
+        if (isLastKey) {
+          lodash.set(ref, key, value);
+        }
+
+        ref = lodash.get(ref, key);
       }
 
-      ref = lodash.get(ref, key);
-    }
+      return newState;
+    });
+  }
 
-    this.set(newState);
+  isInitiated() {
+    return this.hasBeenUsed;
   }
 
   get(): T {
-    const [stateValue] = this.state;
+    const [stateValue] = this.hasBeenUsed ? this.state : [this.initArg];
 
     if (!isObject(stateValue)) return stateValue;
 
@@ -68,11 +83,13 @@ export class StateFacade<T> {
     return stateProxy;
   }
 
-  set(v: React.SetStateAction<T>): void {
-    this.state[1](v);
+  set(v: T): void {
+    if (typeof v === "function") this.state[1](() => v);
+    else this.state[1](v);
   }
 
   use() {
-    this.state = React.useState(this.initValue);
+    this.state = React.useState(this.initArg);
+    this.hasBeenUsed = true;
   }
 }
