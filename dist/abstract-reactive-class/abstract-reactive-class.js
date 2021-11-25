@@ -54,7 +54,10 @@ class ReactiveClass {
         this._hooks.push(store);
     }
     _addEffect(effect) {
-        this._effects.push([effect.implementation, effect.dependencyResolver]);
+        this._effects.push([
+            effect.implementation.bind(this),
+            effect.dependencyResolver,
+        ]);
     }
     _useHooks() {
         for (const facade of this._hooks) {

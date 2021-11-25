@@ -25,7 +25,10 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
   }
 
   private _addEffect(effect: TmpEffectContainer) {
-    this._effects.push([effect.implementation, effect.dependencyResolver]);
+    this._effects.push([
+      effect.implementation.bind(this),
+      effect.dependencyResolver,
+    ]);
   }
 
   private _useHooks() {
