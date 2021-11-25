@@ -100,5 +100,18 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
     return this._props;
   }
 
-  abstract render(props: P): JSX.Element;
+  abstract render(): React.ReactNode;
+
+  /** @deprecated */
+  context!: any;
+  /** @deprecated */
+  setState!: () => void;
+  /** @deprecated */
+  forceUpdate!: () => void;
+  /** @deprecated */
+  props!: P;
+  /** @deprecated */
+  state!: any;
+  /** @deprecated */
+  refs!: any;
 }

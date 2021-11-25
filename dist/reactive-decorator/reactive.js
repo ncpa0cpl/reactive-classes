@@ -10,7 +10,7 @@ const abstract_reactive_class_1 = require("../abstract-reactive-class/abstract-r
 const effect_decorator_1 = require("../effect-decorator/effect-decorator");
 const bind_class_methods_1 = require("../utils/bind-class-methods");
 class ReactiveClassImplementation extends abstract_reactive_class_1.ReactiveClass {
-    render(props) {
+    render() {
         throw new Error();
     }
 }
@@ -32,12 +32,12 @@ const reactive = (Constructor) => {
         if (!component.current) {
             component.current = new RCC(props);
             component.current["_useEffects"]();
-            return component.current.render(props);
+            return component.current.render();
         }
         component.current["_setProps"](props);
         component.current["_useHooks"]();
         component.current["_useEffects"]();
-        return component.current.render(props);
+        return component.current.render();
     };
 };
 exports.reactive = reactive;

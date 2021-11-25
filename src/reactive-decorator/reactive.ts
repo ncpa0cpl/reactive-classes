@@ -5,7 +5,7 @@ import { TmpEffectContainer } from "../effect-decorator/effect-decorator";
 import { bindClassMethods } from "../utils/bind-class-methods";
 
 class ReactiveClassImplementation<P> extends ReactiveClass<P> {
-  render(props: P): JSX.Element {
+  render(): React.ReactNode {
     throw new Error();
   }
 }
@@ -39,7 +39,7 @@ export const reactive = <P extends React.PropsWithChildren<object>>(
 
       component.current["_useEffects"]();
 
-      return component.current.render(props);
+      return component.current.render();
     }
 
     component.current["_setProps"](props);
@@ -48,6 +48,6 @@ export const reactive = <P extends React.PropsWithChildren<object>>(
 
     component.current["_useEffects"]();
 
-    return component.current.render(props);
+    return component.current.render();
   };
 };
