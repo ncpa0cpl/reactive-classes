@@ -1,5 +1,3 @@
 import React from "react";
-export interface ReactiveClassComponent<P extends React.PropsWithChildren<object> = {}> {
-    render(props: P): JSX.Element;
-}
-export declare const reactive: <P extends React.PropsWithChildren<object>>(constructor: new () => ReactiveClassComponent<P>) => any;
+import type { ReactiveClass } from "../abstract-reactive-class/abstract-reactive-class";
+export declare const reactive: <P extends React.PropsWithChildren<object>>(constructor: new () => ReactiveClass<P>) => any;
