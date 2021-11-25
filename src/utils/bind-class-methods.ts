@@ -1,7 +1,8 @@
-export const bindClassMethods = <O extends object>(obj: O): O => {
-  const ownPropertyNames = Object.getOwnPropertyNames(
-    Object.getPrototypeOf(obj)
-  );
+export const bindClassMethods = <O extends object>(
+  obj: O,
+  prototype: object
+): O => {
+  const ownPropertyNames = Object.getOwnPropertyNames(prototype);
 
   for (const property of ownPropertyNames) {
     // @ts-expect-error

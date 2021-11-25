@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.bindClassMethods = void 0;
-const bindClassMethods = (obj) => {
-    const ownPropertyNames = Object.getOwnPropertyNames(Object.getPrototypeOf(obj));
+const bindClassMethods = (obj, prototype) => {
+    const ownPropertyNames = Object.getOwnPropertyNames(prototype);
     for (const property of ownPropertyNames) {
         // @ts-expect-error
         const method = obj[property];

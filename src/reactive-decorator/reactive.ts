@@ -15,7 +15,7 @@ export const reactive = <P extends React.PropsWithChildren<object>>(
     constructor() {
       super();
 
-      return bindClassMethods(this["_deproxify"]());
+      return bindClassMethods(this["_deproxify"](), Constructor.prototype);
     }
   }
 

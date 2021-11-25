@@ -16,7 +16,7 @@ const reactive = (Constructor) => {
     class RCC extends Constructor {
         constructor() {
             super();
-            return (0, bind_class_methods_1.bindClassMethods)(this["_deproxify"]());
+            return (0, bind_class_methods_1.bindClassMethods)(this["_deproxify"](), Constructor.prototype);
         }
     }
     return (props) => {
