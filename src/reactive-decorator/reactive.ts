@@ -1,5 +1,6 @@
 import React from "react";
 import { ReactiveClass } from "../abstract-reactive-class/abstract-reactive-class";
+import { bindClassMethods } from "../utils/bind-class-methods";
 
 class ReactiveClassImplementation<P> extends ReactiveClass<P> {
   render(props: P): JSX.Element {
@@ -14,7 +15,7 @@ export const reactive = <P extends React.PropsWithChildren<object>>(
     constructor() {
       super();
 
-      return this["_deproxify"]();
+      return bindClassMethods(this["_deproxify"]());
     }
   }
 
