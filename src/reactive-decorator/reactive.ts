@@ -1,10 +1,10 @@
 import lodash from "lodash";
 import React from "react";
-import { ReactiveClass } from "../abstract-reactive-class/abstract-reactive-class";
 import { TmpEffectContainer } from "../effect-decorator/effect-decorator";
+import { ReactiveComponent } from "../reactive-component/reactive-component";
 import { bindClassMethods } from "../utils/bind-class-methods";
 
-class ReactiveClassImplementation<P> extends ReactiveClass<P> {
+class ReactiveClassImplementation<P> extends ReactiveComponent<P> {
   render(): React.ReactNode {
     throw new Error();
   }

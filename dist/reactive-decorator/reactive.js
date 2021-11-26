@@ -6,10 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.reactive = void 0;
 const lodash_1 = __importDefault(require("lodash"));
 const react_1 = __importDefault(require("react"));
-const abstract_reactive_class_1 = require("../abstract-reactive-class/abstract-reactive-class");
 const effect_decorator_1 = require("../effect-decorator/effect-decorator");
+const reactive_component_1 = require("../reactive-component/reactive-component");
 const bind_class_methods_1 = require("../utils/bind-class-methods");
-class ReactiveClassImplementation extends abstract_reactive_class_1.ReactiveClass {
+class ReactiveClassImplementation extends reactive_component_1.ReactiveComponent {
     render() {
         throw new Error();
     }

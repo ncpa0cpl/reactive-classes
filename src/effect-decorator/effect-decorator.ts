@@ -16,18 +16,18 @@ export class TmpEffectContainer {
   private _isEffectContainer = EFFECT_CONTAINER_SYMBOL;
 
   implementation: () => void | (() => void);
-  dependencyResolver: (o: ReactiveClass<any>) => any[];
+  dependencyResolver: (o: ReactiveClass) => any[];
 
   constructor(
     impl: () => void | (() => void),
-    deps: (o: ReactiveClass<any>) => any[]
+    deps: (o: ReactiveClass) => any[]
   ) {
     this.dependencyResolver = deps;
     this.implementation = impl;
   }
 }
 
-export function effect<C extends ReactiveClass<any>>(
+export function effect<C extends ReactiveClass>(
   deps: (continer: C) => any[]
 ): any {
   return <K extends string, O extends Record<K, () => void | (() => void)>>(

@@ -1,10 +1,24 @@
 import React from "react";
-import type { TmpEffectContainer } from "../effect-decorator/effect-decorator";
+import { TmpEffectContainer } from "../effect-decorator/effect-decorator";
 import { GenericHookFacade } from "../generic-hook-facade/generic-hook-facade";
 import { StateFacade } from "../state-facade/state-facade";
+import { isObject } from "../utils/is-object";
 
-export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
-  private _original: ReactiveClass<P>;
+const REACTIVE_CLASS_SYMBOL = Symbol();
+
+export abstract class ReactiveClass {
+  static isReactiveClass(v: any): v is ReactiveClass {
+    return (
+      isObject(v) &&
+      "_isReactiveClass" in v &&
+      // @ts-expect-error
+      v._isReactiveClass === REACTIVE_CLASS_SYMBOL
+    );
+  }
+
+  private readonly _isReactiveClass = REACTIVE_CLASS_SYMBOL;
+
+  private _original: ReactiveClass;
 
   private _hooks: (
     | GenericHookFacade<unknown[], unknown>
@@ -13,10 +27,8 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
 
   private _effects: [
     callback: () => void | (() => void),
-    deps: (c: ReactiveClass<any>) => any[]
+    deps: (c: ReactiveClass) => any[]
   ][] = [];
-
-  private _props: P = {} as any;
 
   private _addHook(
     store: GenericHookFacade<unknown[], unknown> | StateFacade<unknown>
@@ -43,17 +55,14 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
     }
   }
 
-  private _deproxify() {
-    return this._original;
+  private _deproxify<T extends ReactiveClass>(this: T): T {
+    return this._original as T;
   }
 
-  private _setProps(props: P) {
-    this._props = props;
-  }
+  constructor(beforeInit?: (self: any) => void) {
+    beforeInit ? beforeInit(this) : void 0;
 
-  constructor(props: P) {
     this._original = this;
-    this._setProps(props);
 
     const proxy = new Proxy(this, {
       set(target, key, value) {
@@ -84,6 +93,21 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
               return value.get();
             },
           });
+        } else if (ReactiveClass.isReactiveClass(value)) {
+          for (const hook of value._hooks.splice(0)) {
+            target._addHook(hook);
+          }
+          for (const [impl, deps] of value._effects.splice(0)) {
+            target._addEffect(new TmpEffectContainer(impl, deps));
+          }
+          Object.defineProperty(target, key, {
+            set() {
+              throw new Error("Hook's cannot be overwritten.");
+            },
+            get() {
+              return value;
+            },
+          });
         } else {
           // @ts-ignore
           target[key] = value;
@@ -95,23 +119,4 @@ export abstract class ReactiveClass<P extends React.PropsWithChildren<any>> {
 
     return proxy;
   }
-
-  getProps(): P {
-    return this._props;
-  }
-
-  abstract render(): React.ReactNode;
-
-  /** @deprecated */
-  context!: any;
-  /** @deprecated */
-  setState!: () => void;
-  /** @deprecated */
-  forceUpdate!: () => void;
-  /** @deprecated */
-  props!: P;
-  /** @deprecated */
-  state!: any;
-  /** @deprecated */
-  refs!: any;
 }

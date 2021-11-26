@@ -1,0 +1,101 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ReactiveClass = void 0;
+const react_1 = __importDefault(require("react"));
+const effect_decorator_1 = require("../effect-decorator/effect-decorator");
+const generic_hook_facade_1 = require("../generic-hook-facade/generic-hook-facade");
+const state_facade_1 = require("../state-facade/state-facade");
+const is_object_1 = require("../utils/is-object");
+const REACTIVE_CLASS_SYMBOL = Symbol();
+class ReactiveClass {
+    constructor(beforeInit) {
+        this._isReactiveClass = REACTIVE_CLASS_SYMBOL;
+        this._hooks = [];
+        this._effects = [];
+        beforeInit ? beforeInit(this) : void 0;
+        this._original = this;
+        const proxy = new Proxy(this, {
+            set(target, key, value) {
+                if (state_facade_1.StateFacade.isStateFacade(value)) {
+                    value.use();
+                    target._addHook(value);
+                    Object.defineProperty(target, key, {
+                        set(v) {
+                            value.set(v);
+                            return true;
+                        },
+                        get() {
+                            return value.get();
+                        },
+                    });
+                }
+                else if (generic_hook_facade_1.GenericHookFacade.isHookFacade(value)) {
+                    value.use();
+                    target._addHook(value);
+                    Object.defineProperty(target, key, {
+                        set() {
+                            throw new Error("Hook's cannot be overwritten.");
+                        },
+                        get() {
+                            return value.get();
+                        },
+                    });
+                }
+                else if (ReactiveClass.isReactiveClass(value)) {
+                    for (const hook of value._hooks.splice(0)) {
+                        target._addHook(hook);
+                    }
+                    for (const [impl, deps] of value._effects.splice(0)) {
+                        target._addEffect(new effect_decorator_1.TmpEffectContainer(impl, deps));
+                    }
+                    Object.defineProperty(target, key, {
+                        set() {
+                            throw new Error("Hook's cannot be overwritten.");
+                        },
+                        get() {
+                            return value;
+                        },
+                    });
+                }
+                else {
+                    // @ts-ignore
+                    target[key] = value;
+                }
+                return true;
+            },
+        });
+        return proxy;
+    }
+    static isReactiveClass(v) {
+        return ((0, is_object_1.isObject)(v) &&
+            "_isReactiveClass" in v &&
+            // @ts-expect-error
+            v._isReactiveClass === REACTIVE_CLASS_SYMBOL);
+    }
+    _addHook(store) {
+        this._hooks.push(store);
+    }
+    _addEffect(effect) {
+        this._effects.push([
+            effect.implementation.bind(this),
+            effect.dependencyResolver,
+        ]);
+    }
+    _useHooks() {
+        for (const facade of this._hooks) {
+            facade.use();
+        }
+    }
+    _useEffects() {
+        for (const [impl, getDeps] of this._effects) {
+            react_1.default.useEffect(impl, getDeps(this));
+        }
+    }
+    _deproxify() {
+        return this._original;
+    }
+}
+exports.ReactiveClass = ReactiveClass;
