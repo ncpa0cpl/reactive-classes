@@ -5,8 +5,6 @@ export abstract class ReactiveHook<A> extends ReactiveClass {
 
   constructor(getArgs: () => A) {
     super((self: ReactiveHook<A>) => (self.argsGetter = getArgs));
-
-    return this["_deproxify"]();
   }
 
   protected get args(): A {

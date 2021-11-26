@@ -66,13 +66,13 @@ export abstract class ReactiveClass {
   }
 
   private _setParent(parent: ReactiveClass) {
-    this._parentClass = parent;
+    this._original._parentClass = parent;
 
-    for (const hook of this._hooks.splice(0)) {
+    for (const hook of this._original._hooks.splice(0)) {
       parent._addHook(hook);
     }
 
-    for (const [impl, getDeps] of this._effects.splice(0)) {
+    for (const [impl, getDeps] of this._original._effects.splice(0)) {
       parent._addEffect(new TmpEffectContainer(impl, () => getDeps(this)));
     }
   }
@@ -143,7 +143,7 @@ export abstract class ReactiveClass {
               throw new Error("Hook's cannot be overwritten.");
             },
             get() {
-              return value;
+              return value._original;
             },
           });
         } else {
