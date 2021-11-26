@@ -1,1 +1,1 @@
-export declare const state: <T>(state: T) => T;
+export declare const $state: <T>(state: T) => T;

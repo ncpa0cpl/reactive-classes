@@ -1,8 +1,5 @@
-import lodash from "lodash";
 import React from "react";
-import { TmpEffectContainer } from "../effect-decorator/effect-decorator";
 import { ReactiveComponent } from "../reactive-component/reactive-component";
-import { bindClassMethods } from "../utils/bind-class-methods";
 
 class ReactiveClassImplementation<P> extends ReactiveComponent<P> {
   render(): React.ReactNode {
@@ -17,17 +14,7 @@ export const reactive = <P extends React.PropsWithChildren<object>>(
     constructor(props: P) {
       super(props);
 
-      for (const property of Object.getOwnPropertyNames(
-        Constructor.prototype
-      )) {
-        const v = lodash.get(this, property);
-
-        if (TmpEffectContainer.isEffectContainer(v)) {
-          this["_addEffect"](v);
-        }
-      }
-
-      return bindClassMethods(this["_deproxify"](), Constructor.prototype);
+      return this["_deproxify"]();
     }
   }
 

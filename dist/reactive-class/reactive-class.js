@@ -4,10 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReactiveClass = void 0;
+const lodash_1 = __importDefault(require("lodash"));
 const react_1 = __importDefault(require("react"));
 const effect_decorator_1 = require("../effect-decorator/effect-decorator");
 const generic_hook_facade_1 = require("../generic-hook-facade/generic-hook-facade");
 const state_facade_1 = require("../state-facade/state-facade");
+const bind_class_methods_1 = require("../utils/bind-class-methods");
 const is_object_1 = require("../utils/is-object");
 const REACTIVE_CLASS_SYMBOL = Symbol();
 class ReactiveClass {
@@ -17,6 +19,8 @@ class ReactiveClass {
         this._effects = [];
         beforeInit ? beforeInit(this) : void 0;
         this._original = this;
+        this._registerEffects();
+        this._bindMethods();
         const proxy = new Proxy(this, {
             set(target, key, value) {
                 if (state_facade_1.StateFacade.isStateFacade(value)) {
@@ -45,6 +49,7 @@ class ReactiveClass {
                     });
                 }
                 else if (ReactiveClass.isReactiveClass(value)) {
+                    value._parentClass = target;
                     for (const hook of value._hooks.splice(0)) {
                         target._addHook(hook);
                     }
@@ -75,10 +80,16 @@ class ReactiveClass {
             // @ts-expect-error
             v._isReactiveClass === REACTIVE_CLASS_SYMBOL);
     }
-    _addHook(store) {
-        this._hooks.push(store);
+    _addHook(hook) {
+        if (this._parentClass) {
+            return this._parentClass._addHook(hook);
+        }
+        this._hooks.push(hook);
     }
     _addEffect(effect) {
+        if (this._parentClass) {
+            return this._parentClass._addEffect(effect);
+        }
         this._effects.push([
             effect.implementation.bind(this),
             effect.dependencyResolver,
@@ -96,6 +107,18 @@ class ReactiveClass {
     }
     _deproxify() {
         return this._original;
+    }
+    _registerEffects() {
+        const methodList = Object.getOwnPropertyNames(Object.getPrototypeOf(this._original));
+        for (const methodName of methodList) {
+            const v = lodash_1.default.get(this, methodName);
+            if (effect_decorator_1.TmpEffectContainer.isEffectContainer(v)) {
+                this["_addEffect"](v);
+            }
+        }
+    }
+    _bindMethods() {
+        (0, bind_class_methods_1.bindClassMethods)(this._original, Object.getPrototypeOf(this._original));
     }
 }
 exports.ReactiveClass = ReactiveClass;

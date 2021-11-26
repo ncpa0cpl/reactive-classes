@@ -1,7 +1,9 @@
+import lodash from "lodash";
 import React from "react";
 import { TmpEffectContainer } from "../effect-decorator/effect-decorator";
 import { GenericHookFacade } from "../generic-hook-facade/generic-hook-facade";
 import { StateFacade } from "../state-facade/state-facade";
+import { bindClassMethods } from "../utils/bind-class-methods";
 import { isObject } from "../utils/is-object";
 
 const REACTIVE_CLASS_SYMBOL = Symbol();
@@ -20,6 +22,8 @@ export abstract class ReactiveClass {
 
   private _original: ReactiveClass;
 
+  private _parentClass?: ReactiveClass;
+
   private _hooks: (
     | GenericHookFacade<unknown[], unknown>
     | StateFacade<unknown>
@@ -31,12 +35,18 @@ export abstract class ReactiveClass {
   ][] = [];
 
   private _addHook(
-    store: GenericHookFacade<unknown[], unknown> | StateFacade<unknown>
-  ) {
-    this._hooks.push(store);
+    hook: GenericHookFacade<unknown[], unknown> | StateFacade<unknown>
+  ): void {
+    if (this._parentClass) {
+      return this._parentClass._addHook(hook);
+    }
+    this._hooks.push(hook);
   }
 
-  private _addEffect(effect: TmpEffectContainer) {
+  private _addEffect(effect: TmpEffectContainer): void {
+    if (this._parentClass) {
+      return this._parentClass._addEffect(effect);
+    }
     this._effects.push([
       effect.implementation.bind(this),
       effect.dependencyResolver,
@@ -59,10 +69,31 @@ export abstract class ReactiveClass {
     return this._original as T;
   }
 
+  private _registerEffects() {
+    const methodList = Object.getOwnPropertyNames(
+      Object.getPrototypeOf(this._original)
+    );
+
+    for (const methodName of methodList) {
+      const v = lodash.get(this, methodName);
+
+      if (TmpEffectContainer.isEffectContainer(v)) {
+        this["_addEffect"](v);
+      }
+    }
+  }
+
+  private _bindMethods() {
+    bindClassMethods(this._original, Object.getPrototypeOf(this._original));
+  }
+
   constructor(beforeInit?: (self: any) => void) {
     beforeInit ? beforeInit(this) : void 0;
 
     this._original = this;
+
+    this._registerEffects();
+    this._bindMethods();
 
     const proxy = new Proxy(this, {
       set(target, key, value) {
@@ -94,6 +125,7 @@ export abstract class ReactiveClass {
             },
           });
         } else if (ReactiveClass.isReactiveClass(value)) {
+          value._parentClass = target;
           for (const hook of value._hooks.splice(0)) {
             target._addHook(hook);
           }

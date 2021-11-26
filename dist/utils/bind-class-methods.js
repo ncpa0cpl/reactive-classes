@@ -4,7 +4,7 @@ exports.bindClassMethods = void 0;
 const bindClassMethods = (obj, prototype) => {
     const ownPropertyNames = Object.getOwnPropertyNames(prototype);
     for (const property of ownPropertyNames) {
-        if (property === "constructor")
+        if (property === "constructor" || property[0] === "_")
             continue;
         // @ts-expect-error
         const method = obj[property];

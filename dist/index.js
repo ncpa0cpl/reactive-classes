@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.state = exports.ReactiveHook = exports.reactive = exports.ReactiveComponent = exports.ReactiveClass = exports.hook = exports.effect = exports.context = void 0;
+exports.$state = exports.ReactiveHook = exports.reactive = exports.ReactiveComponent = exports.ReactiveClass = exports.$hook = exports.effect = exports.$context = void 0;
 var context_1 = require("./context/context");
-Object.defineProperty(exports, "context", { enumerable: true, get: function () { return context_1.context; } });
+Object.defineProperty(exports, "$context", { enumerable: true, get: function () { return context_1.$context; } });
 var effect_decorator_1 = require("./effect-decorator/effect-decorator");
 Object.defineProperty(exports, "effect", { enumerable: true, get: function () { return effect_decorator_1.effect; } });
 var hook_1 = require("./generic-hook-facade/hook");
-Object.defineProperty(exports, "hook", { enumerable: true, get: function () { return hook_1.hook; } });
+Object.defineProperty(exports, "$hook", { enumerable: true, get: function () { return hook_1.$hook; } });
 var reactive_class_1 = require("./reactive-class/reactive-class");
 Object.defineProperty(exports, "ReactiveClass", { enumerable: true, get: function () { return reactive_class_1.ReactiveClass; } });
 var reactive_component_1 = require("./reactive-component/reactive-component");
@@ -16,4 +16,4 @@ Object.defineProperty(exports, "reactive", { enumerable: true, get: function () 
 var reactive_hook_1 = require("./reactive-hook/reactive-hook");
 Object.defineProperty(exports, "ReactiveHook", { enumerable: true, get: function () { return reactive_hook_1.ReactiveHook; } });
 var state_1 = require("./state-facade/state");
-Object.defineProperty(exports, "state", { enumerable: true, get: function () { return state_1.state; } });
+Object.defineProperty(exports, "$state", { enumerable: true, get: function () { return state_1.$state; } });

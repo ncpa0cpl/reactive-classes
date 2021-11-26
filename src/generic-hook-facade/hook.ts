@@ -1,6 +1,6 @@
 import { GenericHookFacade } from "./generic-hook-facade";
 
-export const hook = <A extends any[], R>(
+export const $hook = <A extends any[], R>(
   useFn: (...args: A) => R,
   ...args: A
 ): R => {
