@@ -49,13 +49,7 @@ class ReactiveClass {
                     });
                 }
                 else if (ReactiveClass.isReactiveClass(value)) {
-                    value._parentClass = target;
-                    for (const hook of value._hooks.splice(0)) {
-                        target._addHook(hook);
-                    }
-                    for (const [impl, deps] of value._effects.splice(0)) {
-                        target._addEffect(new effect_decorator_1.TmpEffectContainer(impl, deps));
-                    }
+                    value._setParent(target);
                     Object.defineProperty(target, key, {
                         set() {
                             throw new Error("Hook's cannot be overwritten.");
@@ -103,6 +97,15 @@ class ReactiveClass {
     _useEffects() {
         for (const [impl, getDeps] of this._effects) {
             react_1.default.useEffect(impl, getDeps(this));
+        }
+    }
+    _setParent(parent) {
+        this._parentClass = parent;
+        for (const hook of this._hooks.splice(0)) {
+            parent._addHook(hook);
+        }
+        for (const [impl, getDeps] of this._effects.splice(0)) {
+            parent._addEffect(new effect_decorator_1.TmpEffectContainer(impl, () => getDeps(this)));
         }
     }
     _deproxify() {

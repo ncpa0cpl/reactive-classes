@@ -9,6 +9,7 @@ export declare abstract class ReactiveClass {
     private _addEffect;
     private _useHooks;
     private _useEffects;
+    private _setParent;
     private _deproxify;
     private _registerEffects;
     private _bindMethods;
