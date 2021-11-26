@@ -121,7 +121,16 @@ class ReactiveClass {
         }
     }
     _bindMethods() {
-        (0, bind_class_methods_1.bindClassMethods)(this._original, Object.getPrototypeOf(this._original));
+        let proto = Object.getPrototypeOf(this._original);
+        while (proto && proto !== ReactiveClass.prototype) {
+            (0, bind_class_methods_1.bindClassMethods)(this._original, proto);
+            try {
+                proto = Object.getPrototypeOf(proto);
+            }
+            catch (_a) {
+                //
+            }
+        }
     }
 }
 exports.ReactiveClass = ReactiveClass;

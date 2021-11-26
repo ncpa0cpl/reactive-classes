@@ -96,7 +96,17 @@ export abstract class ReactiveClass {
   }
 
   private _bindMethods() {
-    bindClassMethods(this._original, Object.getPrototypeOf(this._original));
+    let proto = Object.getPrototypeOf(this._original);
+
+    while (proto && proto !== ReactiveClass.prototype) {
+      bindClassMethods(this._original, proto);
+
+      try {
+        proto = Object.getPrototypeOf(proto);
+      } catch {
+        //
+      }
+    }
   }
 
   constructor(beforeInit?: (self: any) => void) {
