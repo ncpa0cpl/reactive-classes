@@ -5,7 +5,6 @@ const reactive_class_1 = require("../reactive-class/reactive-class");
 class ReactiveComponent extends reactive_class_1.ReactiveClass {
     constructor(props) {
         super((self) => self._setProps(props));
-        this._props = {};
     }
     _setProps(props) {
         this._props = props;

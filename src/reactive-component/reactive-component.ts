@@ -4,11 +4,11 @@ import { ReactiveClass } from "../reactive-class/reactive-class";
 export abstract class ReactiveComponent<
   P extends React.PropsWithChildren<any> = React.PropsWithChildren<{}>
 > extends ReactiveClass {
+  private _props!: P;
+
   constructor(props: P) {
     super((self: ReactiveComponent<P>) => self._setProps(props));
   }
-
-  private _props: P = {} as any;
 
   private _setProps(props: P) {
     this._props = props;
