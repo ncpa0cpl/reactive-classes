@@ -1,13 +1,24 @@
 import { ReactiveClass } from "../reactive-class/reactive-class";
 
-export abstract class ReactiveHook<A> extends ReactiveClass {
+export type RHArguments<A> = A extends undefined ? [] : [() => A];
+
+export abstract class ReactiveHook<A = undefined> extends ReactiveClass {
   private argsGetter!: () => A;
+  protected readonly args!: A;
 
-  constructor(getArgs: () => A) {
-    super((self: ReactiveHook<A>) => (self.argsGetter = getArgs));
-  }
+  constructor(...args: RHArguments<A>) {
+    super((self: ReactiveHook<A>) => {
+      const [getArgs = () => undefined] = args;
+      // @ts-expect-error
+      self.argsGetter = getArgs;
+    });
 
-  protected get args(): A {
-    return this.argsGetter();
+    const self = this;
+
+    Object.defineProperty(self, "args", {
+      get() {
+        return self.argsGetter();
+      },
+    });
   }
 }
