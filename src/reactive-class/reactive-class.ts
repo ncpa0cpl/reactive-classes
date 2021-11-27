@@ -1,6 +1,5 @@
 import lodash from "lodash";
-import React from "react";
-import { TmpEffectContainer } from "../effect-decorator/effect-decorator";
+import { EffectFacade } from "../effect-decorator/effect-decorator";
 import { GenericHookFacade } from "../generic-hook-facade/generic-hook-facade";
 import { StateFacade } from "../state-facade/state-facade";
 import { bindClassMethods } from "../utils/bind-class-methods";
@@ -29,10 +28,7 @@ export abstract class ReactiveClass {
     | StateFacade<unknown>
   )[] = [];
 
-  private _effects: [
-    callback: () => void | (() => void),
-    deps: (c: ReactiveClass) => any[]
-  ][] = [];
+  private _effects: EffectFacade[] = [];
 
   private _addHook(
     hook: GenericHookFacade<unknown[], unknown> | StateFacade<unknown>
@@ -43,26 +39,27 @@ export abstract class ReactiveClass {
     this._hooks.push(hook);
   }
 
-  private _addEffect(effect: TmpEffectContainer): void {
+  private _addEffect(effect: EffectFacade): void {
     if (this._parentClass) {
       return this._parentClass._addEffect(effect);
     }
-    this._effects.push([
-      effect.implementation.bind(this),
-      effect.dependencyResolver,
-    ]);
+    this._effects.push(effect);
   }
 
   private _useHooks() {
-    for (const facade of this._hooks) {
-      facade.use();
+    for (const hook of this._hooks) {
+      hook.use();
     }
   }
 
   private _useEffects() {
-    for (const [impl, getDeps] of this._effects) {
-      React.useEffect(impl, getDeps(this));
+    for (const effect of this._effects) {
+      effect.use();
     }
+  }
+
+  private _hasEffect(name: string) {
+    return this._effects.some((e) => e.isSameName(name));
   }
 
   private _setParent(parent: ReactiveClass) {
@@ -72,8 +69,8 @@ export abstract class ReactiveClass {
       parent._addHook(hook);
     }
 
-    for (const [impl, getDeps] of this._original._effects.splice(0)) {
-      parent._addEffect(new TmpEffectContainer(impl, () => getDeps(this)));
+    for (const effect of this._original._effects.splice(0)) {
+      parent._addEffect(effect);
     }
   }
 
@@ -82,15 +79,23 @@ export abstract class ReactiveClass {
   }
 
   private _registerEffects() {
-    const methodList = Object.getOwnPropertyNames(
-      Object.getPrototypeOf(this._original)
-    );
+    let proto = Object.getPrototypeOf(this._original);
 
-    for (const methodName of methodList) {
-      const v = lodash.get(this, methodName);
+    while (proto && proto !== ReactiveClass.prototype) {
+      const methodNames = Object.getOwnPropertyNames(proto);
 
-      if (TmpEffectContainer.isEffectContainer(v)) {
-        this["_addEffect"](v);
+      for (const methodName of methodNames) {
+        const v = lodash.get(proto, methodName);
+
+        if (EffectFacade.isEffectFacade(v) && !this._hasEffect(v.name)) {
+          this._addEffect(v.create(this._original));
+        }
+      }
+
+      try {
+        proto = Object.getPrototypeOf(proto);
+      } catch {
+        proto = undefined;
       }
     }
   }
@@ -104,7 +109,7 @@ export abstract class ReactiveClass {
       try {
         proto = Object.getPrototypeOf(proto);
       } catch {
-        //
+        proto = undefined;
       }
     }
   }

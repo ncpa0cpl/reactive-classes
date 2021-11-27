@@ -5,7 +5,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReactiveClass = void 0;
 const lodash_1 = __importDefault(require("lodash"));
-const react_1 = __importDefault(require("react"));
 const effect_decorator_1 = require("../effect-decorator/effect-decorator");
 const generic_hook_facade_1 = require("../generic-hook-facade/generic-hook-facade");
 const state_facade_1 = require("../state-facade/state-facade");
@@ -84,39 +83,48 @@ class ReactiveClass {
         if (this._parentClass) {
             return this._parentClass._addEffect(effect);
         }
-        this._effects.push([
-            effect.implementation.bind(this),
-            effect.dependencyResolver,
-        ]);
+        this._effects.push(effect);
     }
     _useHooks() {
-        for (const facade of this._hooks) {
-            facade.use();
+        for (const hook of this._hooks) {
+            hook.use();
         }
     }
     _useEffects() {
-        for (const [impl, getDeps] of this._effects) {
-            react_1.default.useEffect(impl, getDeps(this));
+        for (const effect of this._effects) {
+            effect.use();
         }
+    }
+    _hasEffect(name) {
+        return this._effects.some((e) => e.isSameName(name));
     }
     _setParent(parent) {
         this._original._parentClass = parent;
         for (const hook of this._original._hooks.splice(0)) {
             parent._addHook(hook);
         }
-        for (const [impl, getDeps] of this._original._effects.splice(0)) {
-            parent._addEffect(new effect_decorator_1.TmpEffectContainer(impl, () => getDeps(this)));
+        for (const effect of this._original._effects.splice(0)) {
+            parent._addEffect(effect);
         }
     }
     _deproxify() {
         return this._original;
     }
     _registerEffects() {
-        const methodList = Object.getOwnPropertyNames(Object.getPrototypeOf(this._original));
-        for (const methodName of methodList) {
-            const v = lodash_1.default.get(this, methodName);
-            if (effect_decorator_1.TmpEffectContainer.isEffectContainer(v)) {
-                this["_addEffect"](v);
+        let proto = Object.getPrototypeOf(this._original);
+        while (proto && proto !== ReactiveClass.prototype) {
+            const methodNames = Object.getOwnPropertyNames(proto);
+            for (const methodName of methodNames) {
+                const v = lodash_1.default.get(proto, methodName);
+                if (effect_decorator_1.EffectFacade.isEffectFacade(v) && !this._hasEffect(v.name)) {
+                    this._addEffect(v.create(this._original));
+                }
+            }
+            try {
+                proto = Object.getPrototypeOf(proto);
+            }
+            catch (_a) {
+                proto = undefined;
             }
         }
     }
@@ -128,7 +136,7 @@ class ReactiveClass {
                 proto = Object.getPrototypeOf(proto);
             }
             catch (_a) {
-                //
+                proto = undefined;
             }
         }
     }

@@ -1,29 +1,53 @@
+import React from "react";
 import type { ReactiveClass } from "..";
 import { isObject } from "../utils/is-object";
 
-const EFFECT_CONTAINER_SYMBOL = Symbol();
+const EFFECT_FACADE_SYMBOL = Symbol();
 
-export class TmpEffectContainer {
-  static isEffectContainer(e: any) {
+export class EffectFacade {
+  static isEffectFacade(e: any): e is EffectFacade {
     return (
       isObject(e) &&
-      "_isEffectContainer" in e &&
+      "_isEffectFacade" in e &&
       // @ts-expect-error
-      e._isEffectContainer === EFFECT_CONTAINER_SYMBOL
+      e._isEffectFacade === EFFECT_FACADE_SYMBOL
     );
   }
 
-  private _isEffectContainer = EFFECT_CONTAINER_SYMBOL;
+  private _isEffectFacade = EFFECT_FACADE_SYMBOL;
 
-  implementation: () => void | (() => void);
-  dependencyResolver: (o: ReactiveClass) => any[];
+  private instance?: ReactiveClass;
+  private effectMethodName: string;
+  private dependencyResolver: (o: ReactiveClass) => any[];
 
-  constructor(
-    impl: () => void | (() => void),
-    deps: (o: ReactiveClass) => any[]
-  ) {
+  constructor(effectMethodName: string, deps: (o: ReactiveClass) => any[]) {
     this.dependencyResolver = deps;
-    this.implementation = impl;
+    this.effectMethodName = effectMethodName;
+  }
+
+  get name() {
+    return this.effectMethodName;
+  }
+
+  isSameName(name: string) {
+    return name === this.effectMethodName;
+  }
+
+  create(instance: ReactiveClass) {
+    const ef = new EffectFacade(this.effectMethodName, this.dependencyResolver);
+    ef.instance = instance;
+    return ef;
+  }
+
+  use() {
+    if (!this.instance) {
+      throw new Error();
+    }
+
+    React.useEffect(() => {
+      // @ts-expect-error
+      return this.instance[this.effectMethodName]();
+    }, this.dependencyResolver(this.instance));
   }
 }
 
@@ -34,13 +58,8 @@ export function effect<C extends ReactiveClass>(
     target: O,
     key: K
   ) => {
-    const originalImplementation = target[key];
-
     // @ts-expect-error
-    target[`__${key}_effect`] = new TmpEffectContainer(
-      originalImplementation,
-      deps as any
-    );
+    target[`__${key}_effect`] = new EffectFacade(key, deps as any);
 
     return target;
   };
