@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.reactive = void 0;
 const react_1 = __importDefault(require("react"));
 const reactive_component_1 = require("../reactive-component/reactive-component");
-class ReactiveClassImplementation extends reactive_component_1.ReactiveComponent {
+class AnyReactiveComponent extends reactive_component_1.ReactiveComponent {
     render() {
         throw new Error();
     }
@@ -22,11 +22,11 @@ const reactive = (Constructor) => {
         const component = react_1.default.useRef();
         if (!component.current) {
             component.current = new RCC(props);
-            component.current["_useEffects"]();
-            return component.current.render();
         }
-        component.current["_setProps"](props);
-        component.current["_useHooks"]();
+        else {
+            component.current["_setProps"](props);
+            component.current["_useHooks"]();
+        }
         component.current["_useEffects"]();
         return component.current.render();
     };

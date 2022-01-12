@@ -2,28 +2,27 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
+var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.StateFacade = void 0;
+exports.StateWrapper = void 0;
 const lodash_1 = __importDefault(require("lodash"));
 const observable_slim_1 = __importDefault(require("observable-slim"));
 const react_1 = __importDefault(require("react"));
 const is_object_1 = require("../utils/is-object");
-const STATE_FACADE_SYMBOL = Symbol();
-class StateFacade {
-    constructor(initVal) {
-        this._isStateFacade = STATE_FACADE_SYMBOL;
+const IS_STATE_WRAPPER = Symbol("is-state-wrapper");
+class StateWrapper {
+    constructor(initArg) {
+        this[_a] = true;
         this.state = [
             undefined,
             () => {
                 throw new Error("State updated before initialization.");
             },
         ];
-        this.initArg = initVal;
+        this.initArg = initArg;
     }
-    static isStateFacade(d) {
-        return (typeof d === "object" &&
-            d !== null &&
-            d._isStateFacade === STATE_FACADE_SYMBOL);
+    static isStateWrapper(d) {
+        return (0, is_object_1.isObject)(d) && IS_STATE_WRAPPER in d;
     }
     updateNestedState(path, value) {
         const [_, setState] = this.state;
@@ -67,4 +66,5 @@ class StateFacade {
         this.state = react_1.default.useState(this.initArg);
     }
 }
-exports.StateFacade = StateFacade;
+exports.StateWrapper = StateWrapper;
+_a = IS_STATE_WRAPPER;

@@ -1,8 +1,13 @@
-export { $context } from "./context/context";
-export { effect } from "./effect-decorator/effect-decorator";
-export { $hook } from "./generic-hook-facade/hook";
+import "reflect-metadata";
+export { $context } from "./$context/context";
+export { $hook } from "./$hook/hook";
+export { $memo } from "./$memo/memo";
+export { $state } from "./$state/state";
+export { effect } from "./decorator-effect/effect-decorator";
+export { onMount } from "./decorator-lifecycle/on-mount";
+export { onUnmount } from "./decorator-lifecycle/on-unmount";
+export { onUpdate } from "./decorator-lifecycle/on-update";
+export { reactive } from "./decorator-reactive/reactive";
 export { ReactiveClass } from "./reactive-class/reactive-class";
 export { ReactiveComponent } from "./reactive-component/reactive-component";
-export { reactive } from "./reactive-decorator/reactive";
 export { ReactiveHook } from "./reactive-hook/reactive-hook";
-export { $state } from "./state-facade/state";
