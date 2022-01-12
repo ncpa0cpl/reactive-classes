@@ -1,8 +1,8 @@
-import type { DependencyResolver } from "../effect-decorator/effect-wrapper";
-import { EffectWrapper } from "../effect-decorator/effect-wrapper";
-import { GenericHookWrapper } from "../generic-hook-wrapper/generic-hook-wrapper";
+import { GenericHookWrapper } from "../$hook/generic-hook-wrapper";
+import { StateWrapper } from "../$state/state-wrapper";
+import type { DependencyResolver } from "../decorator-effect/effect-wrapper";
+import { EffectWrapper } from "../decorator-effect/effect-wrapper";
 import { MetadataKeys } from "../metadata";
-import { StateWrapper } from "../state-wrapper/state-wrapper";
 import { bindClassMethods } from "../utils/bind-class-methods";
 import { isObject } from "../utils/is-object";
 
