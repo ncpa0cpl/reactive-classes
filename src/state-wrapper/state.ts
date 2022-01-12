@@ -1,7 +1,7 @@
-import { StateFacade } from "./state-facade";
+import { StateWrapper } from "./state-wrapper";
 
 type StateArgument<T> = T extends undefined ? [] : [T];
 
 export const $state = <T = undefined>(...args: StateArgument<T>): T => {
-  return new StateFacade(args[0] ?? undefined) as any;
+  return new StateWrapper(args[0] ?? undefined) as any;
 };

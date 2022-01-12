@@ -1,37 +1,36 @@
-import lodash from "lodash";
-import { EffectFacade } from "../effect-decorator/effect-decorator";
-import { GenericHookFacade } from "../generic-hook-facade/generic-hook-facade";
-import { StateFacade } from "../state-facade/state-facade";
+import type { DependencyResolver } from "../effect-decorator/effect-wrapper";
+import { EffectWrapper } from "../effect-decorator/effect-wrapper";
+import { GenericHookWrapper } from "../generic-hook-wrapper/generic-hook-wrapper";
+import { MetadataKeys } from "../metadata";
+import { StateWrapper } from "../state-wrapper/state-wrapper";
 import { bindClassMethods } from "../utils/bind-class-methods";
 import { isObject } from "../utils/is-object";
 
-const REACTIVE_CLASS_SYMBOL = Symbol();
+const IS_REACTIVE_CLASS = Symbol("is-reactive-class");
 
 export abstract class ReactiveClass {
+  private readonly [IS_REACTIVE_CLASS] = true;
   static isReactiveClass(v: any): v is ReactiveClass {
-    return (
-      isObject(v) &&
-      "_isReactiveClass" in v &&
-      // @ts-expect-error
-      v._isReactiveClass === REACTIVE_CLASS_SYMBOL
-    );
+    return isObject(v) && IS_REACTIVE_CLASS in v;
   }
-
-  private readonly _isReactiveClass = REACTIVE_CLASS_SYMBOL;
 
   private _original: ReactiveClass;
 
   private _parentClass?: ReactiveClass;
 
   private _hooks: (
-    | GenericHookFacade<unknown[], unknown>
-    | StateFacade<unknown>
+    | GenericHookWrapper<unknown[], unknown>
+    | StateWrapper<unknown>
   )[] = [];
 
-  private _effects: EffectFacade[] = [];
+  private _effects: EffectWrapper[] = [];
 
+  /**
+   * Add the hook wrapper to the parent hook list if a parent
+   * exists, or to self instance otherwise.
+   */
   private _addHook(
-    hook: GenericHookFacade<unknown[], unknown> | StateFacade<unknown>
+    hook: GenericHookWrapper<unknown[], unknown> | StateWrapper<unknown>
   ): void {
     if (this._parentClass) {
       return this._parentClass._addHook(hook);
@@ -39,29 +38,35 @@ export abstract class ReactiveClass {
     this._hooks.push(hook);
   }
 
-  private _addEffect(effect: EffectFacade): void {
+  /**
+   * Add the effect wrapper to the parent hook list if a parent
+   * exists, or to self instance otherwise.
+   */
+  private _addEffect(effect: EffectWrapper): void {
     if (this._parentClass) {
       return this._parentClass._addEffect(effect);
     }
     this._effects.push(effect);
   }
 
+  /** Invoke all of the hooks added to this instance and it's child's. */
   private _useHooks() {
     for (const hook of this._hooks) {
       hook.use();
     }
   }
 
+  /** Invoke all of the effects added to this instance and it's child's. */
   private _useEffects() {
     for (const effect of this._effects) {
       effect.use();
     }
   }
 
-  private _hasEffect(name: string) {
-    return this._effects.some((e) => e.isSameName(name));
-  }
-
+  /**
+   * Define a parent of this instance and move all effects and
+   * hook wrappers to the parent.
+   */
   private _setParent(parent: ReactiveClass) {
     this._original._parentClass = parent;
 
@@ -74,10 +79,18 @@ export abstract class ReactiveClass {
     }
   }
 
+  /**
+   * Return the original instance of this, without the proxy
+   * that's wrapped around it.
+   */
   private _deproxify<T extends ReactiveClass>(this: T): T {
     return this._original as T;
   }
 
+  /**
+   * Find all the methods of this instance tagged as effects, and
+   * add them to the effect's list.
+   */
   private _registerEffects() {
     let proto = Object.getPrototypeOf(this._original);
 
@@ -85,10 +98,21 @@ export abstract class ReactiveClass {
       const methodNames = Object.getOwnPropertyNames(proto);
 
       for (const methodName of methodNames) {
-        const v = lodash.get(proto, methodName);
+        if (Reflect.hasMetadata(MetadataKeys.Effect, this, methodName)) {
+          const dependencyResolver: DependencyResolver = Reflect.getMetadata(
+            MetadataKeys.Effect,
+            this,
+            methodName
+          );
 
-        if (EffectFacade.isEffectFacade(v) && !this._hasEffect(v.name)) {
-          this._addEffect(v.create(this._original));
+          this._addEffect(
+            new EffectWrapper(
+              this,
+              // @ts-expect-error
+              (origin) => origin[methodName](),
+              (origin) => dependencyResolver(origin)
+            )
+          );
         }
       }
 
@@ -100,6 +124,7 @@ export abstract class ReactiveClass {
     }
   }
 
+  /** Bind all of the methods of this instance. */
   private _bindMethods() {
     let proto = Object.getPrototypeOf(this._original);
 
@@ -114,8 +139,63 @@ export abstract class ReactiveClass {
     }
   }
 
+  /** Register a new useState hook to this instance or it's parent. */
+  private _registerState(key: string | symbol, state: StateWrapper<unknown>) {
+    state.use();
+
+    this._original._addHook(state);
+
+    Object.defineProperty(this._original, key, {
+      set(v) {
+        state.set(v);
+        return true;
+      },
+      get() {
+        return state.get();
+      },
+    });
+  }
+
+  /** Register a new hook to this instance or it's parent. */
+  private _registerHook(
+    key: string | symbol,
+    hook: GenericHookWrapper<unknown[], unknown>
+  ) {
+    hook.use();
+
+    this._original._addHook(hook);
+
+    Object.defineProperty(this._original, key, {
+      set() {
+        throw new Error("Hook's cannot be overwritten.");
+      },
+      get() {
+        return hook.get();
+      },
+    });
+  }
+
+  /** Register a new ReactiveClass instance as this child. */
+  private _registerChildReactiveClass(
+    key: string | symbol,
+    child: ReactiveClass
+  ) {
+    child._setParent(this._original);
+
+    Object.defineProperty(this._original, key, {
+      set() {
+        throw new Error("Hook's cannot be overwritten.");
+      },
+      get() {
+        return child._original;
+      },
+    });
+  }
+
   constructor(beforeInit?: (self: any) => void) {
-    beforeInit ? beforeInit(this) : void 0;
+    if (beforeInit) {
+      beforeInit(this);
+    }
 
     this._original = this;
 
@@ -124,46 +204,14 @@ export abstract class ReactiveClass {
 
     const proxy = new Proxy(this, {
       set(target, key, value) {
-        if (StateFacade.isStateFacade(value)) {
-          value.use();
-
-          target._addHook(value);
-
-          Object.defineProperty(target, key, {
-            set(v) {
-              value.set(v);
-              return true;
-            },
-            get() {
-              return value.get();
-            },
-          });
-        } else if (GenericHookFacade.isHookFacade(value)) {
-          value.use();
-
-          target._addHook(value);
-
-          Object.defineProperty(target, key, {
-            set() {
-              throw new Error("Hook's cannot be overwritten.");
-            },
-            get() {
-              return value.get();
-            },
-          });
+        if (StateWrapper.isStateWrapper(value)) {
+          target._registerState(key, value);
+        } else if (GenericHookWrapper.isHookWrapper(value)) {
+          target._registerHook(key, value);
         } else if (ReactiveClass.isReactiveClass(value)) {
-          value._setParent(target);
-          Object.defineProperty(target, key, {
-            set() {
-              throw new Error("Hook's cannot be overwritten.");
-            },
-            get() {
-              return value._original;
-            },
-          });
+          target._registerChildReactiveClass(key, value);
         } else {
-          // @ts-ignore
-          target[key] = value;
+          Object.defineProperty(target, key, { value });
         }
 
         return true;

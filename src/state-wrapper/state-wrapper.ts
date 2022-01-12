@@ -5,18 +5,13 @@ import { isObject } from "../utils/is-object";
 
 type SetArg<T> = React.Dispatch<React.SetStateAction<T>>;
 
-const STATE_FACADE_SYMBOL = Symbol();
+const IS_STATE_WRAPPER = Symbol("is-state-wrapper");
 
-export class StateFacade<T> {
-  static isStateFacade(d: any): d is StateFacade<unknown> {
-    return (
-      typeof d === "object" &&
-      d !== null &&
-      d._isStateFacade === STATE_FACADE_SYMBOL
-    );
+export class StateWrapper<T> {
+  private [IS_STATE_WRAPPER] = true;
+  static isStateWrapper(d: any): d is StateWrapper<unknown> {
+    return isObject(d) && IS_STATE_WRAPPER in d;
   }
-
-  private _isStateFacade = STATE_FACADE_SYMBOL;
 
   private initArg: T;
   private state: [T, SetArg<T>] = [
@@ -26,8 +21,8 @@ export class StateFacade<T> {
     },
   ];
 
-  constructor(initVal: T) {
-    this.initArg = initVal;
+  constructor(initArg: T) {
+    this.initArg = initArg;
   }
 
   private updateNestedState(path: string, value: unknown) {
